@@ -1,0 +1,201 @@
+
+<!DOCTYPE html>
+<html lang="my">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#176b45">
+  <meta name="description" content="ဈေးသတိ - မြန်မာနိုင်ငံရှိ ဈေးနှုန်းများကို စုစည်းလေ့လာနိုင်သော ပြည်သူ့အကျိုးပြု Platform">
+  <title>ဈေးသတိ | Zaythadi</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="ဈေးသတိ မူလစာမျက်နှာ">
+      <span class="brand-icon">ဈ</span>
+      <span>
+        <strong>ဈေးသတိ</strong>
+        <small>Zaythadi</small>
+      </span>
+    </a>
+    <span class="status-pill">ပြည်သူ့ဈေးကွက်</span>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <p class="eyebrow">သိရှိပါ • နှိုင်းယှဉ်ပါ • သတိပြုပါ</p>
+      <h1>ဈေးနှုန်းကို သိ၊<br>အပြောင်းအလဲကို သတိပြု</h1>
+      <p>မိမိမြို့နယ်ရဲ့ ကုန်ဈေးနှုန်းတွေကို စုစည်းပြီး ဈေးကွက်အခြေအနေကို လေ့လာနိုင်မယ့် နေရာတစ်ခု။</p>
+      <a class="primary-button" href="#add-price">ဈေးနှုန်းတင်ပြမယ် ↓</a>
+    </section>
+
+    <section class="notice" aria-label="အချက်အလက် သတိပြုရန်">
+      <strong>အချက်အလက် သတိပြုရန်</strong>
+      <p>ဈေးနှုန်းတွေဟာ အသုံးပြုသူတွေရဲ့ တင်ပြချက်ဖြစ်နိုင်ပါတယ်။ ရက်စွဲ၊ ယူနစ်နဲ့ အရင်းအမြစ်ကို စစ်ဆေးပြီးမှ ဆုံးဖြတ်ပါ။</p>
+    </section>
+
+    <section class="section" id="market">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">MARKET SNAPSHOT</p>
+          <h2>ဈေးကွက်အချက်အလက်</h2>
+        </div>
+        <button class="secondary-button" id="export-csv" type="button">CSV ထုတ်ယူရန်</button>
+      </div>
+      <div class="stats-grid">
+        <article class="stat-card">
+          <span>တင်ပြထားသော ဈေးနှုန်း</span>
+          <strong id="total-reports">၀</strong>
+          <small>မှတ်တမ်းစုစုပေါင်း</small>
+        </article>
+        <article class="stat-card">
+          <span>ပါဝင်သော မြို့နယ်</span>
+          <strong id="total-townships">၀</strong>
+          <small>မှတ်တမ်းအလိုက်</small>
+        </article>
+        <article class="stat-card">
+          <span>ယနေ့တင်ပြချက်</span>
+          <strong id="today-reports">၀</strong>
+          <small>ယနေ့ရက်စွဲအလိုက်</small>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="add-price">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">COMMUNITY REPORT</p>
+          <h2>ဈေးနှုန်းတင်ပြရန်</h2>
+        </div>
+      </div>
+      <form id="price-form" class="form-card">
+        <label for="product">ကုန်ပစ္စည်းအမည် *</label>
+        <select id="product" name="product" required>
+          <option value="">ရွေးချယ်ပါ</option>
+          <option>ဆန်</option>
+          <option>ဆီ</option>
+          <option>ကြက်ဥ</option>
+          <option>ကြက်သား</option>
+          <option>ဝက်သား</option>
+          <option>ကြက်သွန်နီ</option>
+          <option>အာလူး</option>
+          <option>ဆား</option>
+          <option>သောက်ရေ</option>
+          <option>အခြား</option>
+        </select>
+
+        <label for="township">မြို့နယ် *</label>
+        <input id="township" name="township" type="text" placeholder="ဥပမာ - မင်္ဂလာဒုံ" required maxlength="100">
+
+        <div class="form-row">
+          <div>
+            <label for="price">ဈေးနှုန်း (ကျပ်) *</label>
+            <input id="price" name="price" type="number" min="0.01" step="any" placeholder="ဥပမာ - 5000" required>
+          </div>
+          <div>
+            <label for="unit">ယူနစ် *</label>
+            <select id="unit" name="unit" required>
+              <option value="">ရွေးချယ်ပါ</option>
+              <option>၁ ပိဿာ</option>
+              <option>၁ ကီလိုဂရမ်</option>
+              <option>၁ ပြည်</option>
+              <option>၁ အိတ်</option>
+              <option>၁ လုံး</option>
+              <option>၁ ပုလင်း</option>
+              <option>၁ ထုပ်</option>
+              <option>အခြား</option>
+            </select>
+          </div>
+        </div>
+
+        <label for="report-date">ဈေးနှုန်းရရှိသည့် ရက်စွဲ *</label>
+        <input id="report-date" name="reportDate" type="date" required>
+
+        <label for="source">အချက်အလက်ရင်းမြစ်</label>
+        <select id="source" name="source">
+          <option value="ကိုယ်တိုင်ဈေးကွက်တွင် စစ်ဆေး">ကိုယ်တိုင်ဈေးကွက်တွင် စစ်ဆေး</option>
+          <option value="ဆိုင်ရှင်ထံမှ မေးမြန်း">ဆိုင်ရှင်ထံမှ မေးမြန်း</option>
+          <option value="အခြားသူထံမှ ကြားသိ">အခြားသူထံမှ ကြားသိ</option>
+          <option value="အွန်လိုင်းရင်းမြစ်">အွန်လိုင်းရင်းမြစ်</option>
+        </select>
+
+        <label for="notes">မှတ်ချက် (မဖြစ်မနေ မဟုတ်ပါ)</label>
+        <textarea id="notes" name="notes" rows="3" maxlength="500" placeholder="အရည်အသွေး၊ အမှတ်တံဆိပ်၊ ဈေးကွက်အခြေအနေ စသည်..."></textarea>
+
+        <p class="privacy-note">ကိုယ်ရေးကိုယ်တာအချက်အလက်၊ ဖုန်းနံပါတ်နဲ့ အန္တရာယ်ဖြစ်စေနိုင်တဲ့ အချက်အလက်တွေ မထည့်ပါနဲ့။</p>
+        <button class="primary-button full-width" type="submit">ဈေးနှုန်းတင်ပြမယ်</button>
+        <p id="form-message" class="form-message" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section class="section" id="reports">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">LATEST SUBMISSIONS</p>
+          <h2>နောက်ဆုံးတင်ပြချက်များ</h2>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <input id="search-reports" type="search" placeholder="ကုန်ပစ္စည်း သို့မဟုတ် မြို့နယ် ရှာရန်" aria-label="ဈေးနှုန်းမှတ်တမ်း ရှာရန်">
+        <button id="clear-data" class="secondary-button" type="button">ဒေတာရှင်းရန်</button>
+      </div>
+
+      <div id="reports-list" class="reports-list">
+        <div class="empty-state">
+          <span class="empty-icon">◎</span>
+          <strong>မှတ်တမ်း မရှိသေးပါ</strong>
+          <p>ပထမဆုံး ဈေးနှုန်းတင်ပြချက်ကို ထည့်သွင်းနိုင်ပါတယ်။</p>
+        </div>
+      </div>
+      <p class="privacy-note">ဤ Version တွင် မှတ်တမ်းများကို လက်ရှိ Browser ထဲ၌သာ သိမ်းဆည်းထားပါသည်။ အခြားသူများနှင့် မျှဝေထားသော ဒေတာဘေ့စ် မချိတ်ဆက်ရသေးပါ။</p>
+    </section>
+
+    <section class="section" id="rumors">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">CHECK BEFORE SHARING</p>
+          <h2>ဈေးကွက်သတင်း တင်ပြရန်</h2>
+        </div>
+      </div>
+      <form id="rumor-form" class="form-card">
+        <label for="rumor-text">ကြားသိထားသော သတင်း သို့မဟုတ် ဈေးကွက်အခြေအနေ *</label>
+        <textarea id="rumor-text" name="rumor" rows="3" maxlength="1000" placeholder="စစ်ဆေးလိုသော သတင်းကို ရေးပါ။ ကိုယ်ရေးကိုယ်တာအချက်အလက် မထည့်ပါနှင့်။" required></textarea>
+        <label for="rumor-township">သက်ဆိုင်ရာ မြို့နယ် (မဖြစ်မနေ မဟုတ်ပါ)</label>
+        <input id="rumor-township" name="rumorTownship" maxlength="100" placeholder="ဥပမာ - ပုဇွန်တောင်">
+        <label for="rumor-source">သတင်းရင်းမြစ် (သိပါက)</label>
+        <input id="rumor-source" name="rumorSource" maxlength="200" placeholder="ဥပမာ - ဆိုင်၊ အများပြည်သူကြေညာချက်">
+        <label class="checkbox-label">
+          <input type="checkbox" id="rumor-unverified" required>
+          <span>ဤသတင်းသည် အတည်ပြုပြီးသား မဟုတ်နိုင်ကြောင်း နားလည်ပါသည်။ *</span>
+        </label>
+        <button class="primary-button full-width" type="submit">သတင်းတင်ပြမယ်</button>
+        <p id="rumor-message" class="form-message" role="status" aria-live="polite"></p>
+      </form>
+      <div id="rumors-list" class="reports-list">
+        <div class="empty-state">
+          <strong>တင်ပြချက် မရှိသေးပါ</strong>
+          <p>တင်ပြထားသော သတင်းများကို ဤနေရာတွင် ကြည့်ရှုနိုင်ပါမည်။</p>
+        </div>
+      </div>
+      <p class="privacy-note">တင်ပြထားသော သတင်းများသည် အလိုအလျောက် အမှန်ဖြစ်သွားခြင်း မဟုတ်ပါ။ အတည်ပြုချက်မရမချင်း သတင်းမှန်ဟု မယူဆပါနှင့်။</p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <strong>ဈေးသတိ | Zaythadi</strong>
+    <p>ပြည်သူ့အကျိုးပြု ဈေးကွက်အချက်အလက် စီမံကိန်း</p>
+    <p>အချက်အလက်များကို သတိဖြင့် စစ်ဆေးပြီး အသုံးပြုပါ။</p>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator && location.protocol !== "file:") {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./service-worker.js").catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
