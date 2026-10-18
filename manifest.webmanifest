@@ -1,0 +1,13 @@
+
+{
+  "id": "./",
+  "name": "Zaythadi - ဈေးသတိ",
+  "short_name": "ဈေးသတိ",
+  "description": "မြန်မာ့ဈေးနှုန်းအချက်အလက်နှင့် ဈေးကွက်အခြေအနေ စောင့်ကြည့်ရေး",
+  "lang": "my",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f8f6",
+  "theme_color": "#176b45"
+}
