@@ -3,18 +3,12 @@
 
 const PRICE_KEY = "zaythadi_prices_v1";
 const NEWS_KEY = "zaythadi_market_news_v1";
+const TOWNSHIP_KEY = "zaythadi_township_v1";
 
 const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 
-const priceForm = $("#price-form");
-const newsForm = $("#rumor-form");
-const reportList = $("#reports-list");
-const newsList = $("#rumors-list");
-const searchInput = $("#search-reports");
-const formMessage = $("#form-message");
-const newsMessage = $("#rumor-message");
-
-function readStorage(key) {
+function readList(key) {
   try {
     const value = JSON.parse(localStorage.getItem(key) || "[]");
     return Array.isArray(value) ? value : [];
@@ -23,9 +17,9 @@ function readStorage(key) {
   }
 }
 
-function writeStorage(key, data) {
+function saveList(key, value) {
   try {
-    localStorage.setItem(key, JSON.stringify(data));
+    localStorage.setItem(key, JSON.stringify(value));
     return true;
   } catch {
     return false;
@@ -33,13 +27,10 @@ function writeStorage(key, data) {
 }
 
 function makeId() {
-  if (window.crypto && typeof window.crypto.randomUUID === "function") {
-    return window.crypto.randomUUID();
-  }
-  return Date.now().toString(36) + Math.random().toString(36).slice(2);
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-function escapeHTML(value) {
+function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({
     "&": "&amp;",
     "<": "&lt;",
@@ -50,15 +41,13 @@ function escapeHTML(value) {
 }
 
 function formatNumber(value) {
-  return Number(value).toLocaleString("my-MM", {
-    maximumFractionDigits: 2
-  });
+  return Number(value).toLocaleString("my-MM");
 }
 
 function formatDate(value) {
   if (!value) return "ရက်စွဲမသိ";
-  const date = new Date(value + "T00:00:00");
-  if (Number.isNaN(date.getTime())) return value;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "ရက်စွဲမသိ";
   return date.toLocaleDateString("my-MM", {
     year: "numeric",
     month: "short",
@@ -66,293 +55,444 @@ function formatDate(value) {
   });
 }
 
-function getToday() {
-  const now = new Date();
-  const localDate = new Date(
-    now.getTime() - now.getTimezoneOffset() * 60000
-  );
-  return localDate.toISOString().slice(0, 10);
+function todayISO() {
+  const date = new Date();
+  const offset = date.getTimezoneOffset();
+  return new Date(date.getTime() - offset * 60000)
+    .toISOString()
+    .slice(0, 10);
 }
 
-function showMessage(element, message, success = true) {
-  if (!element) return;
+function getTownship() {
+  const selected = $("#township").value;
+  if (selected === "အခြား") {
+    return $("#other-township").value.trim();
+  }
+  return selected;
+}
+
+function normalizeStatus(report) {
+  const status = report.status || "";
+  if (["rise", "stable", "fall", "shortage"].includes(status)) {
+    return status;
+  }
+
+  // Compatibility with reports saved by the previous version.
+  return "unknown";
+}
+
+function statusLabel(status) {
+  return {
+    rise: "📈 ဈေးတက်",
+    stable: "➖ ဈေးငြိမ်",
+    fall: "📉 ဈေးကျ",
+    shortage: "🚫 ကုန်ပြတ်",
+    unknown: "ဈေးနှုန်းတင်ပြချက်"
+  }[status] || "ဈေးကွက်သတင်း";
+}
+
+function statusClass(status) {
+  return ["rise", "stable", "fall", "shortage"].includes(status)
+    ? status
+    : "";
+}
+
+function reportDate(report) {
+  return report.date || report.reportDate || report.createdAt || "";
+}
+
+function reportTownship(report) {
+  return report.township || "မြို့နယ်မသိ";
+}
+
+function reportProduct(report) {
+  return report.product || "ကုန်ပစ္စည်းမသိ";
+}
+
+function reportPriceText(report) {
+  const price = Number(report.price);
+  if (report.price === "" || report.price == null || !Number.isFinite(price) || price <= 0) {
+    return "";
+  }
+
+  const unit = report.unit && report.unit !== "မသိ"
+    ? ` / ${escapeHtml(report.unit)}`
+    : "";
+
+  return `${formatNumber(price)} ကျပ်${unit}`;
+}
+
+function setMessage(selector, message, type = "") {
+  const element = $(selector);
   element.textContent = message;
-  element.style.color = success ? "#176b45" : "#b42318";
+  element.className = `form-message ${type}`.trim();
 }
 
-function getPrices() {
-  return readStorage(PRICE_KEY);
+function updatePressedButtons(selector, attribute, value) {
+  $$(selector).forEach((button) => {
+    button.setAttribute(
+      "aria-pressed",
+      button.dataset[attribute] === value ? "true" : "false"
+    );
+  });
 }
 
-function getNews() {
-  return readStorage(NEWS_KEY);
-}
-
-function updateStats(prices) {
-  const townshipSet = new Set(
-    prices.map((item) =>
-      String(item.township || "").trim().toLocaleLowerCase()
-    ).filter(Boolean)
+function showConditionalFields() {
+  $("#other-product-wrap").classList.toggle(
+    "hidden",
+    $("#product").value !== "အခြား"
   );
 
-  $("#total-reports").textContent = formatNumber(prices.length);
-  $("#total-townships").textContent = formatNumber(townshipSet.size);
-  $("#today-reports").textContent = formatNumber(
-    prices.filter((item) => item.reportDate === getToday()).length
+  $("#other-township-wrap").classList.toggle(
+    "hidden",
+    $("#township").value !== "အခြား"
   );
 }
 
-function renderPrices() {
-  const prices = getPrices();
-  const query = (searchInput?.value || "").trim().toLocaleLowerCase();
+function saveTownshipPreference() {
+  const township = $("#township").value;
 
-  updateStats(prices);
+  try {
+    if (township) {
+      localStorage.setItem(TOWNSHIP_KEY, township);
+    } else {
+      localStorage.removeItem(TOWNSHIP_KEY);
+    }
+  } catch {
+    // The app can still work if browser storage is disabled.
+  }
 
-  const filtered = prices
-    .filter((item) => {
-      const searchable = [
-        item.product,
-        item.township,
-        item.unit,
-        item.source,
-        item.notes
-      ].join(" ").toLocaleLowerCase();
+  showConditionalFields();
+  renderAll();
+}
 
-      return searchable.includes(query);
-    })
+function loadTownshipPreference() {
+  try {
+    const saved = localStorage.getItem(TOWNSHIP_KEY);
+    if (saved && Array.from($("#township").options).some((option) => option.value === saved)) {
+      $("#township").value = saved;
+    }
+  } catch {
+    // Ignore unavailable browser storage.
+  }
+
+  showConditionalFields();
+}
+
+function visibleReports() {
+  const reports = readList(PRICE_KEY);
+  const township = getTownship();
+
+  if (!township) return reports;
+
+  return reports.filter((report) => reportTownship(report) === township);
+}
+
+function renderMarketSummary() {
+  const reports = visibleReports();
+  let rise = 0;
+  let stable = 0;
+  let fall = 0;
+  let shortage = 0;
+
+  reports.forEach((report) => {
+    switch (normalizeStatus(report)) {
+      case "rise":
+        rise++;
+        break;
+      case "stable":
+        stable++;
+        break;
+      case "fall":
+        fall++;
+        break;
+      case "shortage":
+        shortage++;
+        break;
+    }
+  });
+
+  $("#rise-count").textContent = formatNumber(rise);
+  $("#stable-count").textContent = formatNumber(stable);
+  $("#fall-count").textContent = formatNumber(fall);
+
+  const township = getTownship();
+  $("#market-location").textContent = township
+    ? `${township} · သိမ်းထားသော တင်ပြချက်များ`
+    : "မြို့နယ်အားလုံး · သိမ်းထားသော တင်ပြချက်များ";
+
+  const known = rise + stable + fall + shortage;
+  const note = $("#data-note");
+
+  if (known === 0) {
+    note.textContent =
+      "တင်ပြချက်မရှိသေးပါ။ အချက်အလက်မလုံလောက်သေးရင် ဈေးကွက်အခြေအနေကို မခန့်မှန်းပါ။";
+  } else {
+    note.textContent =
+      `တင်ပြချက် ${formatNumber(known)} ခုရှိပါတယ်။ ဒါတွေဟာ ပြည်သူတင်ပြထားတဲ့ အချက်အလက်တွေဖြစ်ပြီး အတည်ပြုပြီးသား စာရင်းအင်းမဟုတ်ပါ။`;
+  }
+}
+
+function renderReports() {
+  const reports = visibleReports()
+    .slice()
     .sort((a, b) => {
-      const dateCompare = String(b.reportDate).localeCompare(
-        String(a.reportDate)
-      );
-      return dateCompare || (b.createdAt || 0) - (a.createdAt || 0);
+      const dateA = new Date(reportDate(a) || 0).getTime();
+      const dateB = new Date(reportDate(b) || 0).getTime();
+      return dateB - dateA;
     });
 
-  if (!filtered.length) {
-    reportList.innerHTML = `
+  const list = $("#reports-list");
+
+  if (!reports.length) {
+    list.innerHTML = `
       <div class="empty-state">
-        <span class="empty-icon">◎</span>
-        <strong>${query ? "ရှာဖွေမှုနှင့် ကိုက်ညီသော မှတ်တမ်းမရှိပါ" : "မှတ်တမ်း မရှိသေးပါ"}</strong>
-        <p>${query ? "စာလုံးပေါင်းကို ပြောင်းပြီး ထပ်ရှာကြည့်ပါ။" : "ပထမဆုံး ဈေးနှုန်းတင်ပြချက်ကို ထည့်သွင်းနိုင်ပါတယ်။"}</p>
-      </div>`;
+        <span>🧺</span>
+        <strong>တင်ပြချက် မရှိသေးပါ</strong>
+        <p>သတင်းတင်ပြချက်တွေ ရလာတဲ့အခါ ဒီနေရာမှာ မြင်ရပါမယ်။</p>
+      </div>
+    `;
     return;
   }
 
-  reportList.innerHTML = filtered.map((item) => `
-    <article class="report-card">
-      <span class="report-tag">${escapeHTML(item.township)}</span>
-      <h3>${escapeHTML(item.product)}</h3>
-      <p class="report-price">${formatNumber(item.price)} ကျပ် / ${escapeHTML(item.unit)}</p>
-      <p>ရက်စွဲ — ${escapeHTML(formatDate(item.reportDate))}</p>
-      <p>ရင်းမြစ် — ${escapeHTML(item.source || "မဖော်ပြထား")}</p>
-      ${item.notes ? `<p>မှတ်ချက် — ${escapeHTML(item.notes)}</p>` : ""}
-      <p class="report-meta">အသုံးပြုသူတင်ပြချက် · အတည်ပြုထားခြင်း မဟုတ်ပါ</p>
-      <button class="secondary-button delete-price" type="button" data-id="${escapeHTML(item.id)}">ဒီမှတ်တမ်းဖျက်ရန်</button>
-    </article>
-  `).join("");
+  list.innerHTML = reports.slice(0, 40).map((report) => {
+    const status = normalizeStatus(report);
+    const priceText = reportPriceText(report);
+    const oldNotes = report.notes ? `<p>${escapeHtml(report.notes)}</p>` : "";
+
+    return `
+      <article class="report-card">
+        <div class="report-top">
+          <div>
+            <strong>${escapeHtml(reportProduct(report))}</strong>
+            <div class="report-meta">${escapeHtml(reportTownship(report))}</div>
+          </div>
+          <span class="report-status ${statusClass(status)}">
+            ${escapeHtml(statusLabel(status))}
+          </span>
+        </div>
+        ${priceText ? `<div class="report-price">${priceText}</div>` : ""}
+        ${oldNotes}
+        <div class="report-bottom">
+          <span class="report-meta">${escapeHtml(formatDate(reportDate(report)))}</span>
+          <button class="report-delete" type="button" data-delete-id="${escapeHtml(report.id || "")}">
+            ဖျက်ရန်
+          </button>
+        </div>
+      </article>
+    `;
+  }).join("");
 }
 
 function renderNews() {
-  const news = getNews().sort(
-    (a, b) => (b.createdAt || 0) - (a.createdAt || 0)
-  );
+  const news = readList(NEWS_KEY);
+  const container = $("#rumors-list");
 
   if (!news.length) {
-    newsList.innerHTML = `
-      <div class="empty-state">
-        <strong>တင်ပြချက် မရှိသေးပါ</strong>
-        <p>တင်ပြထားသော သတင်းများကို ဤနေရာတွင် ကြည့်ရှုနိုင်ပါမည်။</p>
-      </div>`;
+    container.innerHTML = "";
     return;
   }
 
-  newsList.innerHTML = news.map((item) => `
-    <article class="report-card">
-      <span class="report-tag">အတည်မပြုရသေးသော တင်ပြချက်</span>
-      <p>${escapeHTML(item.text)}</p>
-      ${item.township ? `<p>မြို့နယ် — ${escapeHTML(item.township)}</p>` : ""}
-      ${item.source ? `<p>ရင်းမြစ် — ${escapeHTML(item.source)}</p>` : ""}
-      <p class="report-meta">တင်ပြသည့်ရက် — ${escapeHTML(formatDate(item.reportDate))}</p>
-    </article>
-  `).join("");
+  container.innerHTML = `
+    <h3>သိမ်းထားသော ဈေးကွက်သတင်းများ</h3>
+    ${news.slice().reverse().slice(0, 10).map((item) => `
+      <article class="news-item">
+        <p>${escapeHtml(item.text || "")}</p>
+        <div class="report-meta">
+          ${escapeHtml(item.township || "မြို့နယ်မသိ")} ·
+          ${escapeHtml(formatDate(item.date || item.createdAt))}
+          · အတည်မပြုရသေးသော သတင်း
+        </div>
+      </article>
+    `).join("")}
+  `;
 }
 
-priceForm.addEventListener("submit", (event) => {
+function renderAll() {
+  renderMarketSummary();
+  renderReports();
+  renderNews();
+}
+
+$$("[data-status]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const value = button.dataset.status;
+    $("#status").value = value;
+    updatePressedButtons("[data-status]", "status", value);
+    setMessage("#form-message", "");
+  });
+});
+
+$$("[data-product]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const value = button.dataset.product;
+    $("#product").value = value;
+    updatePressedButtons("[data-product]", "product", value);
+    showConditionalFields();
+    setMessage("#form-message", "");
+  });
+});
+
+$("#township").addEventListener("change", saveTownshipPreference);
+
+$("#price-form").addEventListener("submit", (event) => {
   event.preventDefault();
 
-  const formData = new FormData(priceForm);
-  const product = String(formData.get("product") || "").trim();
-  const township = String(formData.get("township") || "").trim();
-  const price = Number(formData.get("price"));
-  const unit = String(formData.get("unit") || "").trim();
-  const reportDate = String(formData.get("reportDate") || "");
+  const status = $("#status").value;
+  const selectedProduct = $("#product").value;
+  const product = selectedProduct === "အခြား"
+    ? $("#other-product").value.trim()
+    : selectedProduct;
+  const township = getTownship();
+  const priceInput = $("#price").value.trim();
+  const price = priceInput === "" ? "" : Number(priceInput);
 
-  if (!product || !township || !unit || !reportDate) {
-    showMessage(formMessage, "လိုအပ်သော အချက်အလက်များကို ဖြည့်ပါ။", false);
+  if (!township) {
+    setMessage("#form-message", "အရင်ဆုံး မိမိမြို့နယ်ကို ရွေးပေးပါ။", "error");
+    $("#township").focus();
     return;
   }
 
-  if (!Number.isFinite(price) || price <= 0) {
-    showMessage(formMessage, "ဈေးနှုန်းကို မှန်ကန်စွာ ထည့်ပါ။", false);
+  if (!status) {
+    setMessage("#form-message", "ဈေးတက်၊ ဈေးငြိမ်၊ ဈေးကျ သို့မဟုတ် ကုန်ပြတ်ထဲက တစ်ခု ရွေးပါ။", "error");
     return;
   }
 
-  if (reportDate > getToday()) {
-    showMessage(formMessage, "အနာဂတ်ရက်စွဲကို မရွေးပါနှင့်။", false);
+  if (!product) {
+    setMessage("#form-message", "ကုန်ပစ္စည်းတစ်ခု ရွေးပေးပါ။", "error");
     return;
   }
 
-  const prices = getPrices();
+  if (priceInput !== "" && (!Number.isFinite(price) || price <= 0)) {
+    setMessage("#form-message", "ဈေးနှုန်းထည့်မယ်ဆိုရင် သုညထက်ကြီးတဲ့ ဂဏန်းကို ထည့်ပါ။", "error");
+    return;
+  }
 
-  prices.push({
+  const reports = readList(PRICE_KEY);
+  const report = {
     id: makeId(),
     product,
     township,
-    price,
-    unit,
-    reportDate,
-    source: String(formData.get("source") || "မဖော်ပြထား"),
-    notes: String(formData.get("notes") || "").trim(),
-    createdAt: Date.now()
-  });
+    status,
+    price: priceInput === "" ? "" : price,
+    unit: priceInput === "" ? "မသိ" : $("#unit").value,
+    date: todayISO(),
+    createdAt: new Date().toISOString(),
+    source: "ပြည်သူတင်ပြချက်",
+    notes: ""
+  };
 
-  if (!writeStorage(PRICE_KEY, prices)) {
-    showMessage(
-      formMessage,
-      "ဒေတာသိမ်းမရပါ။ Browser storage နေရာလွတ်ကို စစ်ဆေးပါ။",
-      false
+  reports.push(report);
+
+  if (!saveList(PRICE_KEY, reports)) {
+    setMessage(
+      "#form-message",
+      "ဒေတာ သိမ်းလို့မရပါ။ Browser storage နေရာလွတ်ရှိမရှိ စစ်ဆေးပါ။",
+      "error"
     );
     return;
   }
 
-  priceForm.reset();
-  $("#report-date").value = getToday();
-  renderPrices();
-  showMessage(formMessage, "ဈေးနှုန်းတင်ပြချက်ကို ဒီ Browser ထဲမှာ သိမ်းပြီးပါပြီ။");
+  $("#status").value = "";
+  $("#product").value = "";
+  $("#other-product").value = "";
+  $("#price").value = "";
+  $("#unit").value = "မသိ";
+
+  updatePressedButtons("[data-status]", "status", "");
+  updatePressedButtons("[data-product]", "product", "");
+  showConditionalFields();
+
+  setMessage(
+    "#form-message",
+    "ကျေးဇူးတင်ပါတယ်။ သင့်တင်ပြချက်ကို ဒီ Browser ထဲမှာ သိမ်းပြီးပါပြီ။",
+    "success"
+  );
+
+  renderAll();
+  $("#reports-list").scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
-newsForm.addEventListener("submit", (event) => {
+$("#reports-list").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-delete-id]");
+  if (!button) return;
+
+  const id = button.dataset.deleteId;
+  if (!id) {
+    setMessage(
+      "#form-message",
+      "ဒီမှတ်တမ်းဟာ ဗားရှင်းဟောင်းက ဖြစ်လို့ ဒီခလုတ်နဲ့ ဖျက်လို့မရပါ။",
+      "error"
+    );
+    return;
+  }
+
+  const confirmed = window.confirm("ဒီ Browser ထဲက တင်ပြချက်ကို ဖျက်မှာ သေချာပါသလား?");
+  if (!confirmed) return;
+
+  const reports = readList(PRICE_KEY).filter((report) => String(report.id) !== id);
+
+  if (!saveList(PRICE_KEY, reports)) {
+    setMessage("#form-message", "မှတ်တမ်းကို ဖျက်လို့မရပါ။", "error");
+    return;
+  }
+
+  setMessage("#form-message", "မှတ်တမ်းကို ဖျက်ပြီးပါပြီ။", "success");
+  renderAll();
+});
+
+$("#rumor-form").addEventListener("submit", (event) => {
   event.preventDefault();
 
   const text = $("#rumor-text").value.trim();
-  const township = $("#rumor-township").value.trim();
-  const source = $("#rumor-source").value.trim();
-  const acknowledged = $("#rumor-unverified").checked;
+  const township = getTownship();
 
-  if (!text || !acknowledged) {
-    showMessage(
-      newsMessage,
-      "သတင်းကို ဖြည့်ပြီး အတည်မပြုရသေးနိုင်ကြောင်း သဘောတူပါ။",
-      false
+  if (!township) {
+    setMessage("#rumor-message", "အရင်ဆုံး အပေါ်မှာ မိမိမြို့နယ်ကို ရွေးပါ။", "error");
+    $("#township").focus();
+    return;
+  }
+
+  if (text.length < 5) {
+    setMessage("#rumor-message", "သတင်းကို အနည်းဆုံး စာလုံးအနည်းငယ် ရေးပေးပါ။", "error");
+    return;
+  }
+
+  if (!$("#rumor-unverified").checked) {
+    setMessage(
+      "#rumor-message",
+      "ဒီသတင်းကို အတည်မပြုရသေးနိုင်ကြောင်း အတည်ပြုအမှန်ခြစ်ပေးပါ။",
+      "error"
     );
     return;
   }
 
-  const news = getNews();
-
+  const news = readList(NEWS_KEY);
   news.push({
     id: makeId(),
     text,
     township,
-    source,
-    reportDate: getToday(),
-    createdAt: Date.now()
+    date: todayISO(),
+    createdAt: new Date().toISOString(),
+    verified: false
   });
 
-  if (!writeStorage(NEWS_KEY, news)) {
-    showMessage(newsMessage, "ဒေတာသိမ်းမရပါ။ Browser storage ကို စစ်ဆေးပါ။", false);
+  if (!saveList(NEWS_KEY, news)) {
+    setMessage("#rumor-message", "သတင်းကို သိမ်းလို့မရပါ။", "error");
     return;
   }
 
-  newsForm.reset();
+  $("#rumor-text").value = "";
+  $("#rumor-unverified").checked = false;
+
+  setMessage(
+    "#rumor-message",
+    "သတင်းကို ဒီ Browser ထဲမှာ သိမ်းပြီးပါပြီ။ အခြားသူတွေဆီ မပို့ရသေးပါ။",
+    "success"
+  );
+
   renderNews();
-  showMessage(
-    newsMessage,
-    "တင်ပြချက်ကို ဒီ Browser ထဲမှာ သိမ်းပြီးပါပြီ။ အခြားသူများထံ မပို့ရသေးပါ။"
-  );
 });
 
-searchInput.addEventListener("input", renderPrices);
-
-reportList.addEventListener("click", (event) => {
-  const button = event.target.closest(".delete-price");
-  if (!button) return;
-
-  const confirmed = window.confirm("ဒီဈေးနှုန်းမှတ်တမ်းကို ဖျက်မှာ သေချာပါသလား?");
-  if (!confirmed) return;
-
-  const updated = getPrices().filter((item) => item.id !== button.dataset.id);
-
-  if (!writeStorage(PRICE_KEY, updated)) {
-    window.alert("မှတ်တမ်းဖျက်မရပါ။");
-    return;
-  }
-
-  renderPrices();
-});
-
-$("#clear-data").addEventListener("click", () => {
-  const confirmed = window.confirm(
-    "ဒီ Browser ထဲက ဈေးနှုန်းနဲ့ ဈေးကွက်သတင်းမှတ်တမ်းအားလုံးကို ဖျက်မှာ သေချာပါသလား။ ဒီလုပ်ဆောင်ချက်ကို ပြန်ပြင်လို့မရပါ။"
-  );
-
-  if (!confirmed) return;
-
-  try {
-    localStorage.removeItem(PRICE_KEY);
-    localStorage.removeItem(NEWS_KEY);
-    renderPrices();
-    renderNews();
-    showMessage(formMessage, "ဒီ Browser ထဲက မှတ်တမ်းများကို ရှင်းပြီးပါပြီ။");
-  } catch {
-    showMessage(formMessage, "ဒေတာရှင်းလင်းရာတွင် အမှားဖြစ်နေပါသည်။", false);
-  }
-});
-
-function exportCSV() {
-  const prices = getPrices();
-
-  if (!prices.length) {
-    window.alert("ထုတ်ယူရန် ဈေးနှုန်းမှတ်တမ်း မရှိသေးပါ။");
-    return;
-  }
-
-  const columns = [
-    ["product", "ကုန်ပစ္စည်း"],
-    ["township", "မြို့နယ်"],
-    ["price", "ဈေးနှုန်းကျပ်"],
-    ["unit", "ယူနစ်"],
-    ["reportDate", "ရက်စွဲ"],
-    ["source", "ရင်းမြစ်"],
-    ["notes", "မှတ်ချက်"]
-  ];
-
-  const csvEscape = (value) =>
-    '"' + String(value ?? "").replace(/"/g, '""') + '"';
-
-  const rows = [
-    columns.map((column) => csvEscape(column[1])).join(","),
-    ...prices.map((item) =>
-      columns.map(([key]) => csvEscape(item[key])).join(",")
-    )
-  ];
-
-  const csv = "\uFEFF" + rows.join("\r\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-
-  link.href = url;
-  link.download = `zaythadi-prices-${getToday()}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
-
-$("#export-csv").addEventListener("click", exportCSV);
-
-$("#report-date").max = getToday();
-$("#report-date").value = getToday();
-
-renderPrices();
-renderNews();
+loadTownshipPreference();
+renderAll();
