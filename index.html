@@ -1,219 +1,69 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="my">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#176b45">
-  <meta name="description" content="ဈေးသတိ - မြန်မာ့ဈေးကွက်အခြေအနေကို အလွယ်တကူ ကြည့်ရှုမျှဝေပါ။">
-  <title>ဈေးသတိ | Zaythadi</title>
+  <meta name="theme-color" content="#4285f4">
+  <meta name="description" content="ဈေးနှုန်းများကို မျှဝေပြီး ယနေ့ဈေးကွက်အခြေအနေကို လေ့လာနိုင်သော ပြည်သူ့ဝန်ဆောင်မှု။">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="stylesheet" href="./styles.css">
+  <title>ဈေးသတိ — ယနေ့ ဈေးကွက်အခြေအနေ</title>
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="./" aria-label="ဈေးသတိ ပင်မစာမျက်နှာ">
-      <span class="brand-icon">ဈ</span>
-      <span>
-        <strong>ဈေးသတိ</strong>
-        <small>Zaythadi</small>
-      </span>
+    <a class="brand" href="#top" aria-label="ဈေးသတိ ပင်မစာမျက်နှာ">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <span><strong>ဈေးသတိ</strong><small>ပြည်သူ့ဈေးနှုန်း မျှဝေမှု</small></span>
     </a>
-
-    <label class="township-control">
-      <span>📍</span>
-      <select id="township" aria-label="မိမိမြို့နယ်ရွေးရန်">
-        <option value="">မြို့နယ်ရွေးပါ</option>
-        <option value="ရန်ကုန်">ရန်ကုန်</option>
-        <option value="မန္တလေး">မန္တလေး</option>
-        <option value="နေပြည်တော်">နေပြည်တော်</option>
-        <option value="ပဲခူး">ပဲခူး</option>
-        <option value="မော်လမြိုင်">မော်လမြိုင်</option>
-        <option value="ပုသိမ်">ပုသိမ်</option>
-        <option value="တောင်ကြီး">တောင်ကြီး</option>
-        <option value="မုံရွာ">မုံရွာ</option>
-        <option value="မြစ်ကြီးနား">မြစ်ကြီးနား</option>
-        <option value="စစ်တွေ">စစ်တွေ</option>
-        <option value="အခြား">အခြားမြို့နယ်</option>
-      </select>
-    </label>
+    <label class="township-picker"><span>မြို့နယ်</span><select id="township"><option value="">မြို့နယ်အားလုံး</option></select></label>
   </header>
 
-  <main class="container">
-    <section class="welcome">
-      <span class="eyebrow">ပြည်သူ့ဈေးကွက်အချက်အလက်</span>
-      <h1>ဒီနေ့ ဈေးကွက်မှာ<br>ဘာတွေဖြစ်နေလဲ?</h1>
-      <p>ကိုယ့်ပတ်ဝန်းကျင်က ဈေးနှုန်းတွေကို ကြည့်ပါ။ သိထားတာလေးကိုလည်း အလွယ်တကူ မျှဝေပါ။</p>
+  <main class="container" id="top">
+    <section class="hero">
+      <div class="hero-copy"><span class="eyebrow"><span class="live-dot"></span> ပြည်သူ့တင်ပြချက်များ</span>
+        <h1>ဒီနေ့ ဈေးကွက်မှာ<br><span>ဘာတွေဖြစ်နေလဲ?</span></h1>
+        <p>မိမိပတ်ဝန်းကျင်က ဈေးနှုန်းတွေကို ကြည့်ပါ။ သိထားတဲ့အချက်အလက်ကိုလည်း အခြားသူတွေနဲ့ မျှဝေပါ။</p>
+        <a class="button button-primary" href="#share-section"><span aria-hidden="true">＋</span> ဈေးနှုန်းတင်ပြမယ်</a>
+      </div>
+      <div class="hero-art" aria-hidden="true"><div class="sun"></div><div class="bag bag-blue"></div><div class="bag bag-red"></div><div class="bag bag-yellow"></div><div class="bag bag-green"></div><div class="art-spark spark-one">✦</div><div class="art-spark spark-two">✦</div></div>
     </section>
 
-    <section class="section">
-      <div class="section-heading">
-        <div>
-          <h2>ဈေးကွက်အခြေအနေ</h2>
-          <p id="market-location">မြို့နယ်အားလုံး · လက်ရှိသိမ်းထားသော တင်ပြချက်များ</p>
-        </div>
-        <span class="live-dot">● ဒေတာအခြေအနေ</span>
+    <section class="section market-section" aria-labelledby="market-heading">
+      <div class="section-heading"><div><p class="eyebrow">ယနေ့အကျဉ်းချုပ်</p><h2 id="market-heading">ဈေးကွက်အခြေအနေ</h2></div><button class="icon-button" id="refresh-button" type="button" aria-label="အချက်အလက် ပြန်လည်ရယူရန်" title="ပြန်လည်ရယူရန်">↻</button></div>
+      <div class="status-grid">
+        <button class="status-card status-rise" data-status="rise" type="button"><span class="status-icon">↗</span><span class="status-label">ဈေးတက်</span><strong id="rise-count">—</strong><small>တင်ပြချက်များ</small></button>
+        <button class="status-card status-fall" data-status="fall" type="button"><span class="status-icon">↘</span><span class="status-label">ဈေးကျ</span><strong id="fall-count">—</strong><small>တင်ပြချက်များ</small></button>
+        <button class="status-card status-stable" data-status="stable" type="button"><span class="status-icon">✓</span><span class="status-label">ဈေးတည်ငြိမ်</span><strong id="stable-count">—</strong><small>တင်ပြချက်များ</small></button>
+        <button class="status-card status-shortage" data-status="shortage" type="button"><span class="status-icon">!</span><span class="status-label">ပစ္စည်းရှား</span><strong id="shortage-count">—</strong><small>တင်ပြချက်များ</small></button>
       </div>
-
-      <div class="market-grid">
-        <article class="market-card">
-          <span class="market-emoji">📈</span>
-          <strong id="rise-count">၀</strong>
-          <span>ဈေးတက်ကြောင်း</span>
-        </article>
-        <article class="market-card">
-          <span class="market-emoji">➖</span>
-          <strong id="stable-count">၀</strong>
-          <span>ဈေးငြိမ်ကြောင်း</span>
-        </article>
-        <article class="market-card">
-          <span class="market-emoji">📉</span>
-          <strong id="fall-count">၀</strong>
-          <span>ဈေးကျကြောင်း</span>
-        </article>
-      </div>
-
-      <p class="data-note" id="data-note">
-        တင်ပြချက်မရှိသေးပါ။ အချက်အလက်မလုံလောက်သေးရင် ဈေးကွက်အခြေအနေကို မခန့်မှန်းပါ။
-      </p>
+      <p class="data-note" id="data-note"><span class="note-dot"></span> အချက်အလက်များ ရယူနေပါတယ်…</p>
     </section>
 
-    <section class="section">
-      <div class="section-heading">
-        <div>
-          <h2>နောက်ဆုံးတင်ပြချက်များ</h2>
-          <p>ပြည်သူတွေ မျှဝေထားတဲ့ ဈေးကွက်သတင်းများ</p>
-        </div>
-      </div>
-
-      <div id="reports-list" class="reports-list">
-        <div class="empty-state">
-          <span>🧺</span>
-          <strong>တင်ပြချက် မရှိသေးပါ</strong>
-          <p>သတင်းတင်ပြချက်တွေ ရလာတဲ့အခါ ဒီနေရာမှာ မြင်ရပါမယ်။</p>
-        </div>
-      </div>
+    <section class="section" id="latest-section" aria-labelledby="latest-heading">
+      <div class="section-heading"><div><p class="eyebrow">လူထုက မျှဝေထားသည်</p><h2 id="latest-heading">နောက်ဆုံး ဈေးနှုန်းတင်ပြချက်များ</h2></div><button class="text-button" id="clear-filter" type="button" hidden>အားလုံးကြည့်ရန်</button></div>
+      <div id="reports-list" class="reports-list"><div class="empty-state"><span class="loading-spinner"></span><p>ဈေးနှုန်းတင်ပြချက်များကို ရယူနေပါတယ်…</p></div></div>
+      <button class="button button-outline button-wide" id="load-more" type="button" hidden>နောက်ထပ် ကြည့်မယ်</button>
     </section>
 
-    <section class="share-section" id="share-section">
-      <div class="share-intro">
-        <span class="share-icon">💬</span>
-        <div>
-          <h2>ကိုယ်သိတာလေး မျှဝေမလား?</h2>
-          <p>မိမိသိထားတဲ့ ဈေးကွက်အခြေအနေကို ရွေးချယ်ပြီး တင်ပြနိုင်ပါတယ်။</p>
-        </div>
-      </div>
-
-      <form id="price-form">
-        <fieldset class="choice-group">
-          <legend>၁။ ဘာဖြစ်နေလဲ?</legend>
-          <div class="choice-grid status-grid">
-            <button class="choice-button" type="button" data-status="rise" aria-pressed="false">
-              📈 ဈေးတက်
-            </button>
-            <button class="choice-button" type="button" data-status="stable" aria-pressed="false">
-              ➖ ဈေးငြိမ်
-            </button>
-            <button class="choice-button" type="button" data-status="fall" aria-pressed="false">
-              📉 ဈေးကျ
-            </button>
-            <button class="choice-button" type="button" data-status="shortage" aria-pressed="false">
-              🚫 ကုန်ပြတ်
-            </button>
-          </div>
-          <input type="hidden" id="status" value="">
-        </fieldset>
-
-        <fieldset class="choice-group">
-          <legend>၂။ ဘယ်ကုန်ပစ္စည်းလဲ?</legend>
-          <div class="choice-grid product-grid">
-            <button class="choice-button" type="button" data-product="ဆန်" aria-pressed="false">🍚 ဆန်</button>
-            <button class="choice-button" type="button" data-product="ဆီ" aria-pressed="false">🛢️ ဆီ</button>
-            <button class="choice-button" type="button" data-product="ကြက်ဥ" aria-pressed="false">🥚 ကြက်ဥ</button>
-            <button class="choice-button" type="button" data-product="ကြက်သား" aria-pressed="false">🍗 ကြက်သား</button>
-            <button class="choice-button" type="button" data-product="ဟင်းသီးဟင်းရွက်" aria-pressed="false">🥬 ဟင်းသီးဟင်းရွက်</button>
-            <button class="choice-button" type="button" data-product="စက်သုံးဆီ" aria-pressed="false">⛽ စက်သုံးဆီ</button>
-            <button class="choice-button" type="button" data-product="အခြား" aria-pressed="false">＋ အခြား</button>
-          </div>
-          <input type="hidden" id="product" value="">
-        </fieldset>
-
-        <div id="other-product-wrap" class="field-wrap hidden">
-          <label for="other-product">ကုန်ပစ္စည်းအမည်</label>
-          <input id="other-product" type="text" maxlength="60" placeholder="ဥပမာ - ပဲ၊ ကြက်သွန်">
-        </div>
-
-        <div id="other-township-wrap" class="field-wrap hidden">
-          <label for="other-township">မိမိမြို့နယ်အမည်</label>
-          <input id="other-township" type="text" maxlength="60" placeholder="မြို့နယ်အမည် ရေးပါ">
-        </div>
-
-        <details class="optional-details">
-          <summary>ဈေးနှုန်းအတိအကျ သိရင် ထည့်နိုင်ပါတယ် (မဖြစ်မနေ မဟုတ်ပါ)</summary>
-          <div class="optional-fields">
-            <div class="field-wrap">
-              <label for="price">ဈေးနှုန်း (ကျပ်)</label>
-              <input id="price" type="number" min="0" step="any" inputmode="decimal" placeholder="ဥပမာ - ၅၀၀၀">
-            </div>
-            <div class="field-wrap">
-              <label for="unit">ဘယ်ယူနစ်လဲ?</label>
-              <select id="unit">
-                <option value="မသိ">မသိ / မသတ်မှတ်ရသေး</option>
-                <option value="တစ်ပြည်">တစ်ပြည်</option>
-                <option value="တစ်ပိဿာ">တစ်ပိဿာ</option>
-                <option value="တစ်ကီလို">တစ်ကီလို</option>
-                <option value="တစ်လီတာ">တစ်လီတာ</option>
-                <option value="တစ်လုံး">တစ်လုံး</option>
-                <option value="တစ်ထုပ်">တစ်ထုပ်</option>
-                <option value="တစ်အိတ်">တစ်အိတ်</option>
-                <option value="တစ်ဂါလန်">တစ်ဂါလန်</option>
-                <option value="တစ်ခု">တစ်ခု</option>
-              </select>
-            </div>
-          </div>
-        </details>
-
-        <p class="form-hint">📍 မြို့နယ်ကို အပေါ်မှာ တစ်ကြိမ်ရွေးထားရုံပါပဲ။ အမည်၊ ဖုန်းနံပါတ် မလိုပါ။</p>
-
-        <button class="primary-button" type="submit">သတင်းမျှဝေမယ် <span>→</span></button>
-        <p id="form-message" class="form-message" role="status" aria-live="polite"></p>
+    <section class="share-panel" id="share-section" aria-labelledby="share-heading">
+      <div class="share-intro"><span class="share-icon">＋</span><p class="eyebrow">အများအတွက် အသုံးဝင်ပါစေ</p><h2 id="share-heading">သင်သိတဲ့ ဈေးနှုန်းကို မျှဝေပါ</h2><p>ဈေးဆိုင်မှာ တွေ့ခဲ့တဲ့ ဈေးနှုန်းကို အလွယ်တကူ တင်ပြနိုင်ပါတယ်။ မသိတဲ့အချက်တွေကို မဖြည့်လည်း ရပါတယ်။</p></div>
+      <form id="price-form" class="price-form">
+        <label class="field-label">ဘယ်မြို့နယ်မှာလဲ? <span class="required">*</span><input id="report-township" name="township" maxlength="100" placeholder="ဥပမာ — မင်္ဂလာတောင်ညွန့်" required></label>
+        <label class="field-label">ဘယ်ပစ္စည်းလဲ? <span class="required">*</span><select id="product" name="product" required><option value="">ပစ္စည်းရွေးပါ</option><option>ဆန်</option><option>ဆီ</option><option>ကြက်ဥ</option><option>ကြက်သား</option><option>ဝက်သား</option><option>အမဲသား</option><option>ကြက်သွန်နီ</option><option>ကြက်သွန်ဖြူ</option><option>အာလူး</option><option>ဆား</option><option>သောက်ရေ</option><option>ဓာတ်ဆီ</option><option value="other">အခြားပစ္စည်း</option></select></label>
+        <label class="field-label" id="other-product-wrap" hidden>ပစ္စည်းအမည်<input id="other-product" maxlength="100" placeholder="ပစ္စည်းအမည် ရေးပါ"></label>
+        <fieldset class="field-label status-field"><legend>ဈေးကွက်အခြေအနေ <span class="required">*</span></legend><div class="choice-grid"><label class="choice choice-rise"><input type="radio" name="status" value="rise" required><span>↗ ဈေးတက်</span></label><label class="choice choice-fall"><input type="radio" name="status" value="fall"><span>↘ ဈေးကျ</span></label><label class="choice choice-stable"><input type="radio" name="status" value="stable"><span>✓ တည်ငြိမ်</span></label><label class="choice choice-shortage"><input type="radio" name="status" value="shortage"><span>! ပစ္စည်းရှား</span></label></div></fieldset>
+        <div class="two-fields"><label class="field-label">ဈေးနှုန်း (မဖြည့်လည်းရ) <input id="price" name="price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="ဥပမာ — 4500"></label><label class="field-label">ယူနစ် <select id="unit" name="unit"><option value="">မရွေးရသေး</option><option>တစ်ပိဿာ</option><option>တစ်ပြည်</option><option>တစ်ကီလို</option><option>တစ်လုံး</option><option>တစ်ထုပ်</option><option>တစ်လီတာ</option><option>တစ်ဗူး</option><option>တစ်အိတ်</option><option>တစ်ခု</option></select></label></div>
+        <label class="field-label">ဈေးဆိုင်/ဈေးနေရာ (မဖြည့်လည်းရ) <input id="market-location" maxlength="150" placeholder="ဥပမာ — ရပ်ကွက်ဈေး၊ ဆိုင်အမည်"></label>
+        <label class="field-label">မှတ်ချက် (မဖြည့်လည်းရ) <textarea id="note" maxlength="300" rows="2" placeholder="သိထားတာရှိရင် ရေးနိုင်ပါတယ်"></textarea></label>
+        <button class="button button-primary button-wide" id="submit-button" type="submit">ဈေးနှုန်းတင်ပြမယ် <span aria-hidden="true">→</span></button>
+        <p class="form-message" id="form-message" role="status" aria-live="polite"></p>
+        <p class="privacy-note">မိမိအမည်၊ ဖုန်းနံပါတ် မလိုအပ်ပါ။ တင်ပြချက်ကို အခြားအသုံးပြုသူများလည်း မြင်နိုင်ပါတယ်။</p>
       </form>
     </section>
 
-    <details class="news-details">
-      <summary>🗞️ ကုန်ပြတ်မှုနဲ့ အခြားဈေးကွက်သတင်း မျှဝေမယ်</summary>
-      <p class="subtle-text">မိမိကြားသိထားတဲ့အချက်ကို မျှဝေနိုင်ပါတယ်။ အတည်မပြုရသေးတဲ့ သတင်းဖြစ်ကြောင်း ရှင်းလင်းစွာ ဖော်ပြပါ။</p>
-      <form id="rumor-form">
-        <div class="field-wrap">
-          <label for="rumor-text">ဘာသတင်းလဲ?</label>
-          <textarea id="rumor-text" rows="3" maxlength="500" placeholder="သိထားတဲ့အချက်ကို အတိုချုံးရေးပါ"></textarea>
-        </div>
-        <label class="check-label">
-          <input type="checkbox" id="rumor-unverified">
-          ဒီသတင်းကို ကိုယ်တိုင် အတည်မပြုရသေးကြောင်း နားလည်ပါတယ်။
-        </label>
-        <button class="secondary-button" type="submit">သတင်းပို့မယ်</button>
-        <p id="rumor-message" class="form-message" role="status" aria-live="polite"></p>
-      </form>
-      <div id="rumors-list"></div>
-    </details>
-
-    <footer class="footer">
-      <p>ဈေးသတိ · ပြည်သူအချင်းချင်း ဈေးကွက်အချက်အလက် မျှဝေခြင်း</p>
-      <p>အသုံးပြုသူတင်ပြချက်များကို အလိုအလျောက် အတည်ပြုပြီးသားဟု မယူဆပါနှင့်။</p>
-      <p>ဈေးနှုန်းတင်ပြချက်များကို အွန်လိုင်း Database တွင် မျှဝေထားပြီး ဈေးကွက်သတင်းစာသားများကို ဤ Browser ထဲမှာသာ သိမ်းထားပါတယ်။</p>
-    </footer>
+    <section class="trust-note"><span class="trust-symbol">i</span><p><strong>သတိပြုရန်</strong><br>ဈေးနှုန်းများသည် အသုံးပြုသူများ တင်ပြထားသည့်အချက်အလက်များ ဖြစ်ပါတယ်။ ဝယ်ယူမီ ဆိုင်မှာ ဈေးနှုန်းကို ထပ်မံစစ်ဆေးပါ။ တင်ပြချက်တစ်ခုတည်းဖြင့် ဈေးကွက်တစ်ခုလုံးကို ကိုယ်စားမပြုနိုင်ပါ။</p></section>
   </main>
-
-  <script src="./app.js"></script>
-  <script src="./dashboard.js"></script>
-  <script src="./trends.js"></script>
-  <script>
-    if ("serviceWorker" in navigator && location.protocol !== "file:") {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./service-worker.js").catch(() => {});
-      });
-    }
-  </script>
+  <footer class="footer"><span class="brand-mini"><span class="brand-mark small"><i></i><i></i><i></i><i></i></span> ဈေးသတိ</span><span>ပြည်သူအချင်းချင်း မျှဝေထားသော ဈေးနှုန်းအချက်အလက်</span></footer>
+  <script src="./config.js"></script><script src="./app.js"></script>
 </body>
 </html>
