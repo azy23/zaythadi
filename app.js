@@ -1,12 +1,21 @@
 
 "use strict";
 
+// Zaythadi - Supabase configuration
+const SUPABASE_URL = "https://zkbthficvnutulwkqbge.supabase.co";
+
+// Paste your sb_publishable_... key between the quotes.
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Cnm3BpH7gOcEJJGHVfBhYw_G2ufcg_s";
+
 const PRICE_KEY = "zaythadi_prices_v1";
 const NEWS_KEY = "zaythadi_market_news_v1";
 const TOWNSHIP_KEY = "zaythadi_township_v1";
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
+
+let remoteReports = [];
+let remoteLoadError = false;
 
 function readList(key) {
   try {
@@ -46,8 +55,10 @@ function formatNumber(value) {
 
 function formatDate(value) {
   if (!value) return "ရက်စွဲမသိ";
+
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "ရက်စွဲမသိ";
+
   return date.toLocaleDateString("my-MM", {
     year: "numeric",
     month: "short",
@@ -58,6 +69,7 @@ function formatDate(value) {
 function todayISO() {
   const date = new Date();
   const offset = date.getTimezoneOffset();
+
   return new Date(date.getTime() - offset * 60000)
     .toISOString()
     .slice(0, 10);
@@ -65,19 +77,21 @@ function todayISO() {
 
 function getTownship() {
   const selected = $("#township").value;
+
   if (selected === "အခြား") {
     return $("#other-township").value.trim();
   }
+
   return selected;
 }
 
 function normalizeStatus(report) {
   const status = report.status || "";
+
   if (["rise", "stable", "fall", "shortage"].includes(status)) {
     return status;
   }
 
-  // Compatibility with reports saved by the previous version.
   return "unknown";
 }
 
@@ -98,7 +112,8 @@ function statusClass(status) {
 }
 
 function reportDate(report) {
-  return report.date || report.reportDate || report.createdAt || "";
+  return report.created_at || report.date ||
+    report.reportDate || report.createdAt || "";
 }
 
 function reportTownship(report) {
@@ -111,7 +126,13 @@ function reportProduct(report) {
 
 function reportPriceText(report) {
   const price = Number(report.price);
-  if (report.price === "" || report.price == null || !Number.isFinite(price) || price <= 0) {
+
+  if (
+    report.price === "" ||
+    report.price == null ||
+    !Number.isFinite(price) ||
+    price <= 0
+  ) {
     return "";
   }
 
@@ -124,6 +145,8 @@ function reportPriceText(report) {
 
 function setMessage(selector, message, type = "") {
   const element = $(selector);
+  if (!element) return;
+
   element.textContent = message;
   element.className = `form-message ${type}`.trim();
 }
@@ -159,7 +182,7 @@ function saveTownshipPreference() {
       localStorage.removeItem(TOWNSHIP_KEY);
     }
   } catch {
-    // The app can still work if browser storage is disabled.
+    // Continue if browser storage is unavailable.
   }
 
   showConditionalFields();
@@ -169,7 +192,13 @@ function saveTownshipPreference() {
 function loadTownshipPreference() {
   try {
     const saved = localStorage.getItem(TOWNSHIP_KEY);
-    if (saved && Array.from($("#township").options).some((option) => option.value === saved)) {
+
+    if (
+      saved &&
+      Array.from($("#township").options).some(
+        (option) => option.value === saved
+      )
+    ) {
       $("#township").value = saved;
     }
   } catch {
@@ -180,16 +209,137 @@ function loadTownshipPreference() {
 }
 
 function visibleReports() {
-  const reports = readList(PRICE_KEY);
+  const localReports = readList(PRICE_KEY);
   const township = getTownship();
 
-  if (!township) return reports;
+  // Keep old browser reports and shared Supabase reports visible.
+  const allReports = [
+    ...localReports.map((report) => ({
+      ...report,
+      _local: true
+    })),
+    ...remoteReports.map((report) => ({
+      ...report,
+      _local: false
+    }))
+  ];
 
-  return reports.filter((report) => reportTownship(report) === township);
+  if (!township) return allReports;
+
+  return allReports.filter(
+    (report) => reportTownship(report) === township
+  );
 }
+
+// ---------- Supabase connection ----------
+
+function hasSupabaseConfig() {
+  return (
+    SUPABASE_URL.startsWith("https://") &&
+    SUPABASE_PUBLISHABLE_KEY.startsWith("sb_publishable_")
+  );
+}
+
+async function supabaseRequest(path, options = {}) {
+  if (!hasSupabaseConfig()) {
+    throw new Error(
+      "Supabase Publishable Key မထည့်ရသေးပါ။ app.js ထဲမှာ key ထည့်ပါ။"
+    );
+  }
+
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/${path}`,
+    {
+      ...options,
+      headers: {
+        "apikey": SUPABASE_PUBLISHABLE_KEY,
+        "Authorization": `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+      }
+    }
+  );
+
+  if (!response.ok) {
+    const details = await response.text();
+    console.error("Supabase error:", response.status, details);
+
+    throw new Error(
+      `Database တုံ့ပြန်မှု အမှား (${response.status})`
+    );
+  }
+
+  if (response.status === 204) return [];
+
+  return response.json();
+}
+
+async function loadRemoteReports() {
+  if (!hasSupabaseConfig()) {
+    remoteLoadError = true;
+    renderAll();
+
+    setMessage(
+      "#form-message",
+      "Supabase Publishable Key ကို app.js ထဲမှာ ထည့်ပြီးမှ အွန်လိုင်းဒေတာကို ဖတ်နိုင်ပါမယ်။",
+      "error"
+    );
+    return;
+  }
+
+  try {
+    const rows = await supabaseRequest(
+      "price_reports?select=id,township,product,status,price,unit,market_location,note,created_at&order=created_at.desc"
+    );
+
+    remoteReports = Array.isArray(rows) ? rows : [];
+    remoteLoadError = false;
+  } catch (error) {
+    remoteLoadError = true;
+    console.error("Could not load shared reports:", error);
+
+    setMessage(
+      "#form-message",
+      "အွန်လိုင်းဒေတာကို ဖတ်မရသေးပါ။ URL, Key, Database policy နဲ့ Internet ကို စစ်ဆေးပါ။",
+      "error"
+    );
+  }
+
+  renderAll();
+}
+
+async function submitRemoteReport(report) {
+  const payload = {
+    township: report.township,
+    product: report.product,
+    status: report.status,
+    price: report.price === "" ? null : Number(report.price),
+    unit: report.price === "" ? null : (report.unit || null),
+    market_location: null,
+    note: null
+  };
+
+  const rows = await supabaseRequest("price_reports", {
+    method: "POST",
+    headers: {
+      "Prefer": "return=representation"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (Array.isArray(rows) && rows.length > 0) {
+    remoteReports.unshift(rows[0]);
+  } else {
+    // Reload if the server did not return the inserted record.
+    await loadRemoteReports();
+  }
+}
+
+// ---------- Market summary and report list ----------
 
 function renderMarketSummary() {
   const reports = visibleReports();
+
   let rise = 0;
   let stable = 0;
   let fall = 0;
@@ -217,9 +367,10 @@ function renderMarketSummary() {
   $("#fall-count").textContent = formatNumber(fall);
 
   const township = getTownship();
+
   $("#market-location").textContent = township
-    ? `${township} · သိမ်းထားသော တင်ပြချက်များ`
-    : "မြို့နယ်အားလုံး · သိမ်းထားသော တင်ပြချက်များ";
+    ? `${township} · တင်ပြချက်များ`
+    : "မြို့နယ်အားလုံး · တင်ပြချက်များ";
 
   const known = rise + stable + fall + shortage;
   const note = $("#data-note");
@@ -229,7 +380,12 @@ function renderMarketSummary() {
       "တင်ပြချက်မရှိသေးပါ။ အချက်အလက်မလုံလောက်သေးရင် ဈေးကွက်အခြေအနေကို မခန့်မှန်းပါ။";
   } else {
     note.textContent =
-      `တင်ပြချက် ${formatNumber(known)} ခုရှိပါတယ်။ ဒါတွေဟာ ပြည်သူတင်ပြထားတဲ့ အချက်အလက်တွေဖြစ်ပြီး အတည်ပြုပြီးသား စာရင်းအင်းမဟုတ်ပါ။`;
+      `တင်ပြချက် ${formatNumber(known)} ခုရှိပါတယ်။ ပြည်သူတင်ပြထားတဲ့ အချက်အလက်တွေဖြစ်ပြီး အတည်ပြုပြီးသား စာရင်းအင်းမဟုတ်ပါ။`;
+  }
+
+  if (remoteLoadError) {
+    note.textContent +=
+      " အွန်လိုင်းဒေတာ ချိတ်ဆက်မှုကို စစ်ဆေးရန်လိုအပ်ပါသည်။";
   }
 }
 
@@ -249,7 +405,7 @@ function renderReports() {
       <div class="empty-state">
         <span>🧺</span>
         <strong>တင်ပြချက် မရှိသေးပါ</strong>
-        <p>သတင်းတင်ပြချက်တွေ ရလာတဲ့အခါ ဒီနေရာမှာ မြင်ရပါမယ်။</p>
+        <p>တင်ပြချက်တွေ ရလာတဲ့အခါ ဒီနေရာမှာ မြင်ရပါမယ်။</p>
       </div>
     `;
     return;
@@ -258,26 +414,39 @@ function renderReports() {
   list.innerHTML = reports.slice(0, 40).map((report) => {
     const status = normalizeStatus(report);
     const priceText = reportPriceText(report);
-    const oldNotes = report.notes ? `<p>${escapeHtml(report.notes)}</p>` : "";
+    const noteText = report.note || report.notes || "";
+    const notes = noteText
+      ? `<p>${escapeHtml(noteText)}</p>`
+      : "";
+
+    // Only browser-local records can be deleted from this interface.
+    const deleteButton = report._local
+      ? `<button class="report-delete" type="button"
+          data-delete-id="${escapeHtml(report.id || "")}">
+          ဖျက်ရန်
+        </button>`
+      : `<span class="report-meta">အွန်လိုင်းတင်ပြချက်</span>`;
 
     return `
       <article class="report-card">
         <div class="report-top">
           <div>
             <strong>${escapeHtml(reportProduct(report))}</strong>
-            <div class="report-meta">${escapeHtml(reportTownship(report))}</div>
+            <div class="report-meta">
+              ${escapeHtml(reportTownship(report))}
+            </div>
           </div>
           <span class="report-status ${statusClass(status)}">
             ${escapeHtml(statusLabel(status))}
           </span>
         </div>
         ${priceText ? `<div class="report-price">${priceText}</div>` : ""}
-        ${oldNotes}
+        ${notes}
         <div class="report-bottom">
-          <span class="report-meta">${escapeHtml(formatDate(reportDate(report)))}</span>
-          <button class="report-delete" type="button" data-delete-id="${escapeHtml(report.id || "")}">
-            ဖျက်ရန်
-          </button>
+          <span class="report-meta">
+            ${escapeHtml(formatDate(reportDate(report)))}
+          </span>
+          ${deleteButton}
         </div>
       </article>
     `;
@@ -314,9 +483,12 @@ function renderAll() {
   renderNews();
 }
 
+// ---------- Status and product selection ----------
+
 $$("[data-status]").forEach((button) => {
   button.addEventListener("click", () => {
     const value = button.dataset.status;
+
     $("#status").value = value;
     updatePressedButtons("[data-status]", "status", value);
     setMessage("#form-message", "");
@@ -326,6 +498,7 @@ $$("[data-status]").forEach((button) => {
 $$("[data-product]").forEach((button) => {
   button.addEventListener("click", () => {
     const value = button.dataset.product;
+
     $("#product").value = value;
     updatePressedButtons("[data-product]", "product", value);
     showConditionalFields();
@@ -335,14 +508,24 @@ $$("[data-product]").forEach((button) => {
 
 $("#township").addEventListener("change", saveTownshipPreference);
 
-$("#price-form").addEventListener("submit", (event) => {
+$("#other-township").addEventListener("input", renderAll);
+
+// ---------- Submit price report ----------
+
+$("#price-form").addEventListener("submit", async (event) => {
   event.preventDefault();
+
+  const submitButton = $("#price-form").querySelector(
+    'button[type="submit"]'
+  );
 
   const status = $("#status").value;
   const selectedProduct = $("#product").value;
+
   const product = selectedProduct === "အခြား"
     ? $("#other-product").value.trim()
     : selectedProduct;
+
   const township = getTownship();
   const priceInput = $("#price").value.trim();
   const price = priceInput === "" ? "" : Number(priceInput);
@@ -354,7 +537,11 @@ $("#price-form").addEventListener("submit", (event) => {
   }
 
   if (!status) {
-    setMessage("#form-message", "ဈေးတက်၊ ဈေးငြိမ်၊ ဈေးကျ သို့မဟုတ် ကုန်ပြတ်ထဲက တစ်ခု ရွေးပါ။", "error");
+    setMessage(
+      "#form-message",
+      "ဈေးတက်၊ ဈေးငြိမ်၊ ဈေးကျ သို့မဟုတ် ကုန်ပြတ်ထဲက တစ်ခု ရွေးပါ။",
+      "error"
+    );
     return;
   }
 
@@ -364,82 +551,101 @@ $("#price-form").addEventListener("submit", (event) => {
   }
 
   if (priceInput !== "" && (!Number.isFinite(price) || price <= 0)) {
-    setMessage("#form-message", "ဈေးနှုန်းထည့်မယ်ဆိုရင် သုညထက်ကြီးတဲ့ ဂဏန်းကို ထည့်ပါ။", "error");
-    return;
-  }
-
-  const reports = readList(PRICE_KEY);
-  const report = {
-    id: makeId(),
-    product,
-    township,
-    status,
-    price: priceInput === "" ? "" : price,
-    unit: priceInput === "" ? "မသိ" : $("#unit").value,
-    date: todayISO(),
-    createdAt: new Date().toISOString(),
-    source: "ပြည်သူတင်ပြချက်",
-    notes: ""
-  };
-
-  reports.push(report);
-
-  if (!saveList(PRICE_KEY, reports)) {
     setMessage(
       "#form-message",
-      "ဒေတာ သိမ်းလို့မရပါ။ Browser storage နေရာလွတ်ရှိမရှိ စစ်ဆေးပါ။",
+      "ဈေးနှုန်းထည့်မယ်ဆိုရင် သုညထက်ကြီးတဲ့ ဂဏန်းကို ထည့်ပါ။",
       "error"
     );
     return;
   }
 
-  $("#status").value = "";
-  $("#product").value = "";
-  $("#other-product").value = "";
-  $("#price").value = "";
-  $("#unit").value = "မသိ";
+  if (!hasSupabaseConfig()) {
+    setMessage(
+      "#form-message",
+      "Supabase Publishable Key ကို app.js ထဲမှာ အရင်ထည့်ပါ။",
+      "error"
+    );
+    return;
+  }
 
-  updatePressedButtons("[data-status]", "status", "");
-  updatePressedButtons("[data-product]", "product", "");
-  showConditionalFields();
+  if (submitButton) submitButton.disabled = true;
 
-  setMessage(
-    "#form-message",
-    "ကျေးဇူးတင်ပါတယ်။ သင့်တင်ပြချက်ကို ဒီ Browser ထဲမှာ သိမ်းပြီးပါပြီ။",
-    "success"
-  );
+  setMessage("#form-message", "တင်ပြချက်ကို အွန်လိုင်းသို့ ပို့နေပါတယ်…");
 
-  renderAll();
-  $("#reports-list").scrollIntoView({ behavior: "smooth", block: "start" });
+  try {
+    const report = {
+      product,
+      township,
+      status,
+      price: priceInput === "" ? "" : price,
+      unit: priceInput === "" ? "မသိ" : $("#unit").value
+    };
+
+    await submitRemoteReport(report);
+
+    $("#status").value = "";
+    $("#product").value = "";
+    $("#other-product").value = "";
+    $("#price").value = "";
+    $("#unit").value = "မသိ";
+
+    updatePressedButtons("[data-status]", "status", "");
+    updatePressedButtons("[data-product]", "product", "");
+    showConditionalFields();
+
+    setMessage(
+      "#form-message",
+      "ကျေးဇူးတင်ပါတယ်။ သင့်တင်ပြချက်ကို အွန်လိုင်း Database ထဲ သိမ်းပြီးပါပြီ။",
+      "success"
+    );
+
+    renderAll();
+    $("#reports-list").scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  } catch (error) {
+    console.error("Price report submission failed:", error);
+
+    setMessage(
+      "#form-message",
+      `တင်ပြချက် မပို့နိုင်သေးပါ။ ${error.message || "Internet နဲ့ Supabase setting ကို စစ်ဆေးပါ။"} Browser ထဲမှာပဲ သိမ်းပြီး အောင်မြင်တယ်လို့ မပြပါဘူး။`,
+      "error"
+    );
+  } finally {
+    if (submitButton) submitButton.disabled = false;
+  }
 });
+
+// ---------- Delete browser-local reports only ----------
 
 $("#reports-list").addEventListener("click", (event) => {
   const button = event.target.closest("[data-delete-id]");
   if (!button) return;
 
   const id = button.dataset.deleteId;
-  if (!id) {
-    setMessage(
-      "#form-message",
-      "ဒီမှတ်တမ်းဟာ ဗားရှင်းဟောင်းက ဖြစ်လို့ ဒီခလုတ်နဲ့ ဖျက်လို့မရပါ။",
-      "error"
-    );
-    return;
-  }
+  if (!id) return;
 
-  const confirmed = window.confirm("ဒီ Browser ထဲက တင်ပြချက်ကို ဖျက်မှာ သေချာပါသလား?");
+  const confirmed = window.confirm(
+    "ဒီ Browser ထဲက တင်ပြချက်ကို ဖျက်မှာ သေချာပါသလား?"
+  );
+
   if (!confirmed) return;
 
-  const reports = readList(PRICE_KEY).filter((report) => String(report.id) !== id);
+  const reports = readList(PRICE_KEY).filter(
+    (report) => String(report.id) !== id
+  );
 
   if (!saveList(PRICE_KEY, reports)) {
     setMessage("#form-message", "မှတ်တမ်းကို ဖျက်လို့မရပါ။", "error");
     return;
   }
 
-  setMessage("#form-message", "မှတ်တမ်းကို ဖျက်ပြီးပါပြီ။", "success");
+  setMessage("#form-message", "Browser ထဲက မှတ်တမ်းကို ဖျက်ပြီးပါပြီ။", "success");
   renderAll();
 });
+
+// ---------- Market news remains browser-local for now ----------
 
 $("#rumor-form").addEventListener("submit", (event) => {
   event.preventDefault();
@@ -448,13 +654,21 @@ $("#rumor-form").addEventListener("submit", (event) => {
   const township = getTownship();
 
   if (!township) {
-    setMessage("#rumor-message", "အရင်ဆုံး အပေါ်မှာ မိမိမြို့နယ်ကို ရွေးပါ။", "error");
+    setMessage(
+      "#rumor-message",
+      "အရင်ဆုံး အပေါ်မှာ မိမိမြို့နယ်ကို ရွေးပါ။",
+      "error"
+    );
     $("#township").focus();
     return;
   }
 
   if (text.length < 5) {
-    setMessage("#rumor-message", "သတင်းကို အနည်းဆုံး စာလုံးအနည်းငယ် ရေးပေးပါ။", "error");
+    setMessage(
+      "#rumor-message",
+      "သတင်းကို အနည်းဆုံး စာလုံးအနည်းငယ် ရေးပေးပါ။",
+      "error"
+    );
     return;
   }
 
@@ -468,6 +682,7 @@ $("#rumor-form").addEventListener("submit", (event) => {
   }
 
   const news = readList(NEWS_KEY);
+
   news.push({
     id: makeId(),
     text,
@@ -487,12 +702,15 @@ $("#rumor-form").addEventListener("submit", (event) => {
 
   setMessage(
     "#rumor-message",
-    "သတင်းကို ဒီ Browser ထဲမှာ သိမ်းပြီးပါပြီ။ အခြားသူတွေဆီ မပို့ရသေးပါ။",
+    "သတင်းကို ဒီ Browser ထဲမှာပဲ သိမ်းထားပါတယ်။ အခြားသူတွေဆီ မပို့ရသေးပါ။",
     "success"
   );
 
   renderNews();
 });
 
+// ---------- Start app ----------
+
 loadTownshipPreference();
 renderAll();
+loadRemoteReports();
